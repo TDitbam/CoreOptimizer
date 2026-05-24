@@ -1,3 +1,7 @@
+# Release files
+*.zip
+PCoreOptimizer_Release.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
