@@ -5,8 +5,8 @@ import sys
 import os
 
 from main import main
-from cpu_topology import P_CORES, E_CORES
-from config_loader import load_config, save_config
+from core.cpu_topology import P_CORES, E_CORES
+from core.config_loader import load_config, save_config
 
 # Set appearance and theme
 ctk.set_appearance_mode("Dark")

@@ -2,9 +2,9 @@ import psutil
 import time
 import threading
 
-from cpu_topology import P_CORES, E_CORES
-from config_loader import load_config
-from process_optimizer import optimize_process
+from core.cpu_topology import P_CORES, E_CORES
+from core.config_loader import load_config
+from core.process_optimizer import optimize_process
 
 
 def main(stop_event=None):
