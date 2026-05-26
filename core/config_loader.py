@@ -5,7 +5,7 @@ CONFIG_FILE = "config/config.ini"
 
 
 def load_config():
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(delimiters=('=',))
     if not os.path.exists(CONFIG_FILE):
         config["Settings"] = {
             "interval": "5",
