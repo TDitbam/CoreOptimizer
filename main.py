@@ -54,19 +54,25 @@ def set_process_cores(proc, cores_list):
 def optimize_processes(stop_event, default_interval):
     while True:
         config = load_config()
-        exclude_core_0 = config["Settings"].getboolean("exclude_core_0", fallback=True)
+        try:
+            exclude_core_0 = config["Settings"].getboolean("exclude_core_0", fallback=True)
+            interval = float(config["Settings"].get("interval", default_interval))
+        except (ValueError, TypeError):
+            exclude_core_0 = True
+            interval = default_interval
+            print(f"[!] Invalid config values. Using defaults: interval={interval}, exclude_core_0={exclude_core_0}")
+            
         p_cores, e_cores = get_optimal_cores(exclude_core_0)
         
         if not p_cores:
             print("[!] Unable to detect P-cores/E-cores. Sleeping.")
             if stop_event and stop_event.is_set():
                 break
-            time.sleep(default_interval)
+            time.sleep(interval)
             continue
 
         targets_map = {name.lower(): priority for name, priority in get_targets(config)}
         paths_list = [(path.lower().replace('\\', '/'), priority) for path, priority in get_paths(config)]
-        interval = float(config["Settings"].get("interval", default_interval))
         
         # Iterate through processes once per loop for efficiency
         for proc in psutil.process_iter(['pid', 'name', 'exe']):

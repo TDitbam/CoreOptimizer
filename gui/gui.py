@@ -11,7 +11,10 @@ from core.cleaner import clean_junk
 def run_optimization(stop_event: threading.Event):
     from main import optimize_processes
     config = load_config()
-    interval = float(config["Settings"].get("interval", 5.0))
+    try:
+        interval = float(config["Settings"].get("interval", 5.0))
+    except (ValueError, TypeError):
+        interval = 5.0
     optimize_processes(stop_event, interval)
 
 # ตั้งค่าธีมการแสดงผลตั้งต้น
@@ -36,7 +39,7 @@ class App(ctk.CTk):
         # SIDEBAR
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(5, weight=1) # Adjust for more buttons
+        self.sidebar_frame.grid_rowconfigure(5, weight=1)
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="OPTIMIZER", font=ctk.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -60,6 +63,10 @@ class App(ctk.CTk):
         self.settings_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.cleanup_frame = ctk.CTkFrame(self, fg_color="transparent")
 
+        # Initialize textboxes before logging
+        self.textbox = ctk.CTkTextbox(self.dashboard_frame, font=ctk.CTkFont(family="Consolas", size=12))
+        self.clean_log = ctk.CTkTextbox(self.cleanup_frame, height=300)
+
         self.setup_dashboard()
         self.setup_settings()
         self.setup_cleanup()
@@ -68,12 +75,11 @@ class App(ctk.CTk):
 
     def setup_dashboard(self):
         for widget in self.dashboard_frame.winfo_children():
-            if not isinstance(widget, ctk.CTkTextbox): widget.destroy()
+            if widget != self.textbox: widget.destroy()
 
         self.dashboard_frame.grid_columnconfigure(0, weight=1)
         self.dashboard_frame.grid_rowconfigure(3, weight=1)
 
-        # Status Card
         self.status_card = ctk.CTkFrame(self.dashboard_frame, height=100)
         self.status_card.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
         self.status_card.grid_columnconfigure(0, weight=1)
@@ -84,12 +90,15 @@ class App(ctk.CTk):
                                          text_color="#28a745" if self.running else "#ABB2BF")
         self.status_label.grid(row=0, column=0, pady=20)
 
-        # Info Cores
         self.core_info_frame = ctk.CTkFrame(self.dashboard_frame, fg_color="transparent")
         self.core_info_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
         self.core_info_frame.grid_columnconfigure((0, 1), weight=1)
 
-        exclude_core_0 = self.config["Settings"].getboolean("exclude_core_0", fallback=True)
+        try:
+            exclude_core_0 = self.config["Settings"].getboolean("exclude_core_0", fallback=True)
+        except (ValueError, TypeError):
+            exclude_core_0 = True
+            
         p_cores, e_cores = split_p_e_cores(exclude_core_0)
 
         self.pcore_box = ctk.CTkFrame(self.core_info_frame)
@@ -102,7 +111,6 @@ class App(ctk.CTk):
         ctk.CTkLabel(self.ecore_box, text="E-CORES", font=ctk.CTkFont(size=12, weight="bold")).pack(pady=(10, 0))
         ctk.CTkLabel(self.ecore_box, text=f"{len(e_cores)} Cores", font=ctk.CTkFont(size=18)).pack(pady=(0, 10))
 
-        # Controls
         self.dash_control_frame = ctk.CTkFrame(self.dashboard_frame, fg_color="transparent")
         self.dash_control_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=10)
         self.dash_control_frame.grid_columnconfigure((0, 1), weight=1)
@@ -115,9 +123,8 @@ class App(ctk.CTk):
                                       state="normal" if self.running else "disabled", command=self.stop_service)
         self.stop_btn.grid(row=0, column=1, padx=(10, 0), sticky="ew")
 
-        if not hasattr(self, 'textbox'):
-            self.textbox = ctk.CTkTextbox(self.dashboard_frame, font=ctk.CTkFont(family="Consolas", size=12))
-            self.textbox.grid(row=3, column=0, sticky="nsew", padx=20, pady=20)
+        self.textbox.grid(row=3, column=0, sticky="nsew", padx=20, pady=20)
+        if self.textbox.get("1.0", "end-1c") == "":
             self.log("🚀 System initialized and ready.")
 
     def setup_settings(self):
@@ -133,7 +140,12 @@ class App(ctk.CTk):
         self.interval_entry.insert(0, self.config["Settings"].get("interval", "5"))
         self.interval_entry.bind("<Return>", lambda e: self.save_settings_realtime())
         
-        self.exclude_core0_var = ctk.BooleanVar(value=self.config["Settings"].getboolean("exclude_core_0", fallback=True))
+        try:
+            exclude_val = self.config["Settings"].getboolean("exclude_core_0", fallback=True)
+        except (ValueError, TypeError):
+            exclude_val = True
+            
+        self.exclude_core0_var = ctk.BooleanVar(value=exclude_val)
         ctk.CTkSwitch(self.general_frame, text="Exclude Core 0", variable=self.exclude_core0_var, command=self.save_settings_realtime).pack(side="left", padx=20)
         
         self.lists_frame = ctk.CTkTabview(self.settings_frame, height=450)
@@ -176,18 +188,14 @@ class App(ctk.CTk):
 
     def setup_cleanup(self):
         self.cleanup_frame.grid_columnconfigure(0, weight=1)
-        self.cleanup_frame.grid_rowconfigure(1, weight=1)
+        self.cleanup_frame.grid_rowconfigure(3, weight=1)
 
-        self.clean_header = ctk.CTkLabel(self.cleanup_frame, text="System Junk Cleaner", font=ctk.CTkFont(size=20, weight="bold"))
-        self.clean_header.grid(row=0, column=0, pady=20)
-
-        self.clean_info = ctk.CTkLabel(self.cleanup_frame, text="This will remove temporary files and free up space.")
-        self.clean_info.grid(row=1, column=0, pady=10)
-
+        ctk.CTkLabel(self.cleanup_frame, text="System Junk Cleaner", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0, pady=20)
+        ctk.CTkLabel(self.cleanup_frame, text="This will remove temporary files and free up space.").grid(row=1, column=0, pady=10)
+        
         self.clean_btn = ctk.CTkButton(self.cleanup_frame, text="SCAN & CLEAN JUNK", height=50, command=self.perform_cleanup)
         self.clean_btn.grid(row=2, column=0, pady=20)
 
-        self.clean_log = ctk.CTkTextbox(self.cleanup_frame, height=300)
         self.clean_log.grid(row=3, column=0, sticky="nsew", padx=20, pady=20)
 
     def perform_cleanup(self):
@@ -200,19 +208,24 @@ class App(ctk.CTk):
                 self.clean_log.insert("end", f"{msg}\n")
                 self.clean_log.see("end")
             
-            f_count, b_saved = clean_junk(_cb)
-            mb_saved = round(b_saved / (1024 * 1024), 2)
-            self.clean_log.insert("end", f"\n✅ Cleanup Complete!\n")
-            self.clean_log.insert("end", f"Files deleted: {f_count}\n")
-            self.clean_log.insert("end", f"Space saved: {mb_saved} MB\n")
-            self.clean_btn.configure(state="normal", text="SCAN & CLEAN JUNK")
-            messagebox.showinfo("Cleanup Complete", f"Successfully cleaned {f_count} files.\nSaved {mb_saved} MB of space.")
+            try:
+                f_count, b_saved = clean_junk(_cb)
+                mb_saved = round(b_saved / (1024 * 1024), 2)
+                self.clean_log.insert("end", f"\n✅ Cleanup Complete!\n")
+                self.clean_log.insert("end", f"Files deleted: {f_count}\n")
+                self.clean_log.insert("end", f"Space saved: {mb_saved} MB\n")
+                messagebox.showinfo("Cleanup Complete", f"Successfully cleaned {f_count} files.\nSaved {mb_saved} MB of space.")
+            except Exception as e:
+                self.clean_log.insert("end", f"\n❌ Error during cleanup: {e}\n")
+            finally:
+                self.clean_btn.configure(state="normal", text="SCAN & CLEAN JUNK")
 
         threading.Thread(target=_task, daemon=True).start()
 
     def refresh_game_list_ui(self):
         for w in self.game_scroll.winfo_children(): w.destroy()
-        for name, prio in self.config["Targets"].items():
+        targets = get_targets(self.config)
+        for name, prio in targets:
             row = ctk.CTkFrame(self.game_scroll, fg_color="transparent")
             row.pack(fill="x", pady=2)
             ctk.CTkLabel(row, text=name, anchor="w").pack(side="left", padx=10, fill="x", expand=True)
@@ -221,7 +234,8 @@ class App(ctk.CTk):
 
     def refresh_path_list_ui(self):
         for w in self.path_scroll.winfo_children(): w.destroy()
-        for path, prio in self.config["Paths"].items():
+        paths = get_paths(self.config)
+        for path, prio in paths:
             row = ctk.CTkFrame(self.path_scroll, fg_color="transparent")
             row.pack(fill="x", pady=2)
             ctk.CTkLabel(row, text=path, anchor="w", font=ctk.CTkFont(size=10)).pack(side="left", padx=10, fill="x", expand=True)
@@ -237,8 +251,8 @@ class App(ctk.CTk):
             self.save_settings_realtime()
 
     def remove_game(self, name):
-        if name in self.config["Targets"]:
-            del self.config["Targets"][name]
+        if self.config.has_option("Targets", name):
+            self.config.remove_option("Targets", name)
             self.refresh_game_list_ui()
             self.save_settings_realtime()
 
@@ -250,31 +264,38 @@ class App(ctk.CTk):
             self.save_settings_realtime()
 
     def remove_path(self, path):
-        if path in self.config["Paths"]:
-            del self.config["Paths"][path]
+        if self.config.has_option("Paths", path):
+            self.config.remove_option("Paths", path)
             self.refresh_path_list_ui()
             self.save_settings_realtime()
 
     def save_settings_realtime(self):
-        self.config["Settings"]["interval"] = self.interval_entry.get()
-        self.config["Settings"]["exclude_core_0"] = str(self.exclude_core0_var.get()).lower()
-        save_config(self.config)
-        self.setup_dashboard()
-        self.log("⚡ Config saved.")
+        try:
+            val = self.interval_entry.get().strip()
+            if val.replace('.', '', 1).isdigit():
+                self.config["Settings"]["interval"] = val
+            self.config["Settings"]["exclude_core_0"] = str(self.exclude_core0_var.get()).lower()
+            save_config(self.config)
+            self.setup_dashboard()
+            self.log("⚡ Config saved.")
+        except Exception as e:
+            self.log(f"⚠ Save error: {e}")
 
     def scan_games(self):
-        self.log("🔍 Scanning for games... (this might take a moment)")
+        self.log("🔍 Scanning for games...")
         def _task():
             found = []
             search_paths = ["D:/Games", "C:/Program Files", "C:/Program Files (x86)"]
             for p in search_paths:
                 if os.path.exists(p):
-                    for root, dirs, files in os.walk(p):
-                        for file in files:
-                            if file.lower().endswith(".exe") and "uninst" not in file.lower() and "crash" not in file.lower():
-                                found.append(file)
-                        if len(found) > 100: break
-            self.log(f"✅ Found {len(found)} executables. Check your lists.")
+                    try:
+                        for root, dirs, files in os.walk(p):
+                            for file in files:
+                                if file.lower().endswith(".exe") and "uninst" not in file.lower() and "crash" not in file.lower():
+                                    found.append(file)
+                            if len(found) > 100: break
+                    except Exception: continue
+            self.log(f"✅ Found {len(found)} executables.")
         threading.Thread(target=_task, daemon=True).start()
 
     def show_dashboard(self):
