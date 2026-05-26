@@ -7,11 +7,17 @@ CONFIG_FILE = "config/config.ini"
 def load_config():
     config = configparser.ConfigParser()
     if not os.path.exists(CONFIG_FILE):
-        config["Settings"] = {"interval": "15"}
-        config["Games"] = {
-            "game1": "BlackDesert64.exe",
-            "game2": "cs2.exe"
+        config["Settings"] = {
+            "interval": "5",
+            "exclude_core_0": "true"
         }
+        config["Targets"] = {
+            "BlackDesert64.exe": "HIGH",
+            "cs2.exe": "HIGH",
+            "cyberpunk2077.exe": "HIGH"
+        }
+        config["Paths"] = {}
+        
         config_dir = os.path.dirname(CONFIG_FILE)
         if config_dir and not os.path.exists(config_dir):
             os.makedirs(config_dir)
@@ -19,6 +25,15 @@ def load_config():
             config.write(f)
         print(f"[INFO] Created {CONFIG_FILE}")
     config.read(CONFIG_FILE)
+    
+    # Ensure sections exist
+    if "Settings" not in config:
+        config["Settings"] = {"interval": "5"}
+    if "Targets" not in config:
+        config["Targets"] = {}
+    if "Paths" not in config:
+        config["Paths"] = {}
+        
     return config
 
 def save_config(config):
@@ -28,3 +43,11 @@ def save_config(config):
     with open(CONFIG_FILE, "w") as f:
         config.write(f)
     print(f"[INFO] Updated {CONFIG_FILE}")
+
+def get_targets(config):
+    return config.items("Targets")
+
+def get_paths(config):
+    if "Paths" in config:
+        return config.items("Paths")
+    return []

@@ -1,79 +1,80 @@
-# CoreOptimizer
+# P-Core Optimizer Pro 🚀
 
-A lightweight Windows utility to optimize game performance by managing CPU affinity (P-Core/E-Core separation) and process priority.
+A powerful Windows utility designed to maximize game performance on modern Intel Hybrid CPUs (12th Gen+) by intelligently managing CPU affinity and process priority.
 
-## Features
+## 🌟 Key Features
 
-- **Auto P-Core Detection**: Automatically identifies Performance and Efficiency cores on modern hybrid CPUs.
-- **E-Core Separation**: Ensures game processes run exclusively on P-Cores to reduce latency and micro-stutter.
-- **Game Process Monitor**: Automatically detects and optimizes configured games as they start.
-- **High Priority Automation**: Automatically sets game processes to High Priority class.
-- **Modern GUI**: Built with [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for a sleek, Windows 11-style interface.
-- **Lightweight Background Service**: Efficiently monitors system processes with minimal overhead.
+- **Intel Hybrid Architecture Support**: Automatically detects P-Cores (Performance) and E-Cores (Efficiency).
+- **Advanced Core Affinity**: 
+    - **P-CORE Mode**: Force critical apps/games onto high-performance cores.
+    - **E-CORE Mode**: Assign background tasks to efficiency cores to keep P-Cores free.
+    - **NORMAL Mode**: Let Windows manage threads naturally.
+- **Smart Optimization Zones**: 
+    - **Managed Games**: Target specific executables by name.
+    - **Managed Directories**: Automatically optimize *any* game launched from a specific folder (e.g., your Steam or Games library).
+- **System Junk Cleaner**: Integrated cleaner to remove temporary files and free up disk space.
+- **Real-time Configuration**: Changes in the GUI are saved and applied instantly without needing a restart.
+- **Core 0 Management**: Explicit toggle to exclude Core 0 from optimization to reserve it for OS tasks.
+- **Unified Entry Point**: Run as a modern GUI by default or use `--cli` for terminal-based operation.
+- **PC Scanner**: Quickly scan common directories to find and add game executables.
 
-## Screenshots
-
-*(Add screenshots here)*
-
-## Project Structure
+## 🛠 Project Structure
 
 ```text
 CoreOptimizer/
-│
 ├── core/
-│   ├── cpu_topology.py       # CPU Core detection logic
-│   ├── process_optimizer.py   # Affinity and priority logic
-│   └── config_loader.py      # Configuration management
-│
+│   ├── config_loader.py   # Centralized configuration management
+│   ├── cpu_topology.py    # Advanced CPU core detection
+│   ├── cleaner.py         # System junk cleaning logic
+│   └── process_optimizer.py # Legacy optimization helpers
 ├── gui/
-│   └── gui.py                # Main GUI application
-│
+│   └── gui.py             # Modern CustomTkinter interface
 ├── config/
-│   └── config.ini            # User configuration
-│
-├── logs/                     # System logs
-├── screenshots/              # UI Screenshots
-│
-├── requirements.txt
-├── README.md
-├── LICENSE
-└── main.py                   # CLI Entry point & Core logic
+│   └── config.ini         # Standardized user configuration
+├── main.py                # Main entry point (GUI/CLI)
+├── requirements.txt       # Dependencies
+└── README.md              # Documentation
 ```
 
-## Installation
+## 🚀 Installation
 
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/TDitbam/CoreOptimizer.git
    cd CoreOptimizer
    ```
-2. Install dependencies:
+2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
+## 🎮 Usage
 
-### Running from source
-Execute the GUI application (requires administrative privileges):
-```bash
-python gui/gui.py
-```
+### Launching the Application
+The application **requires Administrative Privileges** to manage other processes.
 
-### Administrative Requirements
-This application **must run as administrator** to modify process affinity and priority of other applications.
+- **GUI Mode (Default)**:
+  ```bash
+  python main.py
+  ```
+- **CLI Mode**:
+  ```bash
+  python main.py --cli
+  ```
 
-## How it Works
+### How to Optimize
+1. **Settings Tab**: Add your game executables or entire game directories.
+2. **Select Mode**: Choose between P-CORE or E-CORE for each entry.
+3. **Dashboard**: Click **START OPTIMIZER** to begin monitoring.
+4. **Cleanup**: Use the **Cleanup Junk** tab to free up system space.
 
-### P-Core Affinity
-The optimizer uses `psutil` to set the CPU affinity of game processes. By limiting a game to only P-Cores, we avoid the Windows scheduler's occasional mistake of placing time-critical game threads on slower E-Cores.
+## 🔍 How it Works
 
-### Core 0 Management
-By default, the optimizer includes Core 0 if it is a P-Core. However, it can be configured to avoid Core 0 if the user prefers to leave it for OS background tasks.
+### P-Core vs E-Core Separation
+Windows doesn't always place game threads on P-Cores, leading to micro-stutter. P-Core Optimizer Pro forces the OS to use only the fastest cores for your games, reducing latency and improving 1% lows.
 
-## Known Issues
-- Some Anti-Cheat systems might block affinity changes.
-- Requires Windows 10/11 for best results with hybrid architecture.
+### Path-Based Matching
+Instead of adding every game manually, you can add your entire `D:\Games` library. The optimizer will monitor every process launched and, if its path starts with your library folder, it will apply your chosen performance profile.
 
-## License
+## 📜 License
 MIT License - see [LICENSE](LICENSE) for details.

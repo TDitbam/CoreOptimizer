@@ -1,7 +1,7 @@
 import psutil
 
 
-def split_p_e_cores():
+def split_p_e_cores(exclude_core_0=True):
     """
     Auto split P-Core / E-Core
     """
@@ -10,7 +10,8 @@ def split_p_e_cores():
 
     # fallback old CPU
     if logical <= 8:
-        p_cores = list(range(1, logical))
+        start_index = 1 if exclude_core_0 else 0
+        p_cores = list(range(start_index, logical))
         e_cores = []
 
         return p_cores, e_cores
@@ -22,10 +23,8 @@ def split_p_e_cores():
     if p_thread_count % 2 != 0:
         p_thread_count += 1
 
-    p_cores = list(range(1, p_thread_count))
+    start_index = 1 if exclude_core_0 else 0
+    p_cores = list(range(start_index, p_thread_count))
     e_cores = list(range(p_thread_count, logical))
 
     return p_cores, e_cores
-
-
-P_CORES, E_CORES = split_p_e_cores()

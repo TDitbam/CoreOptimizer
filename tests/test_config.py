@@ -1,7 +1,7 @@
 import os
 import configparser
 import pytest
-from core.config_loader import load_config, CONFIG_FILE
+from core.config_loader import load_config, CONFIG_FILE, get_targets
 
 def test_config_creation(tmp_path):
     """Test that config.ini is created if it doesn't exist."""
@@ -19,8 +19,8 @@ def test_config_creation(tmp_path):
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
     assert "Settings" in config
-    assert "Games" in config
-    assert config["Settings"]["interval"] == "15"
+    assert "Targets" in config
+    assert config["Settings"]["interval"] == "5"
 
 def test_config_loading(tmp_path):
     """Test loading an existing config."""
@@ -28,7 +28,7 @@ def test_config_loading(tmp_path):
     
     config = configparser.ConfigParser()
     config["Settings"] = {"interval": "30"}
-    config["Games"] = {"test_game": "notepad.exe"}
+    config["Targets"] = {"test_game.exe": "HIGH"}
     
     # Ensure config directory exists for the test if needed
     config_dir = os.path.dirname(CONFIG_FILE)
@@ -40,4 +40,5 @@ def test_config_loading(tmp_path):
         
     loaded_config = load_config()
     assert loaded_config["Settings"]["interval"] == "30"
-    assert loaded_config["Games"]["test_game"] == "notepad.exe"
+    targets = dict(get_targets(loaded_config))
+    assert targets["test_game.exe"] == "HIGH"
