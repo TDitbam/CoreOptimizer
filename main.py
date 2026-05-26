@@ -71,8 +71,8 @@ def optimize_processes(stop_event, default_interval):
             time.sleep(interval)
             continue
 
-        targets_map = {name.lower(): priority for name, priority in get_targets(config)}
-        paths_list = [(path.lower().replace('\\', '/'), priority) for path, priority in get_paths(config)]
+        targets_map = {name.lower(): priority.upper() for name, priority in get_targets(config)}
+        paths_list = [(path.lower().replace('\\', '/'), priority.upper()) for path, priority in get_paths(config)]
         
         # Iterate through processes once per loop for efficiency
         for proc in psutil.process_iter(['pid', 'name', 'exe']):
@@ -86,23 +86,19 @@ def optimize_processes(stop_event, default_interval):
                 
                 # Match 1: Filename
                 if name in targets_map:
-                    priority = targets_map[name].upper()
+                    priority = targets_map[name]
                 
                 # Match 2: Path-based (if not already matched)
                 if not priority and exe_path:
                     for folder, p_val in paths_list:
-                        folder_normalized = folder.replace('\\', '/')
-                        if exe_path.startswith(folder_normalized):
-                            priority = p_val.upper()
+                        if exe_path.startswith(folder):
+                            priority = p_val
                             break
                 
                 if priority:
                     pid = proc.pid
                     
-                    # 1. Set Priority
-                    set_process_priority(proc, priority)
-                    
-                    # 2. Determine Cores
+                    # Determine Cores
                     if priority in ['HIGH', 'P-CORE']:
                         cores_to_use = p_cores
                     elif priority == 'E-CORE':
@@ -110,8 +106,11 @@ def optimize_processes(stop_event, default_interval):
                     else:
                         cores_to_use = list(range(psutil.cpu_count()))
 
+                    # Apply Affinity and Priority
                     set_process_cores(proc, cores_to_use)
-                    print(f"[OPT] Process: {pid} ({proc.info['name']}) | Mode: {priority} | Cores: {cores_to_use}")
+                    set_process_priority(proc, priority)
+                    
+                    print(f"[OPT] PID: {pid} | Process: {proc.info['name']} | Mode: {priority} | Cores: {len(cores_to_use)}")
                         
             except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
                 continue
