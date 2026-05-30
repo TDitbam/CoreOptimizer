@@ -12,9 +12,9 @@ def load_config():
             "exclude_core_0": "true"
         }
         config["Targets"] = {
-            "BlackDesert64.exe": "HIGH",
-            "cs2.exe": "HIGH",
-            "cyberpunk2077.exe": "HIGH"
+            "BlackDesert64.exe": "P-CORE",
+            "cs2.exe": "P-CORE",
+            "cyberpunk2077.exe": "P-CORE"
         }
         config["Paths"] = {}
         

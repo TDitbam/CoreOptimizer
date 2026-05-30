@@ -322,6 +322,22 @@ class App(ctk.CTk):
         ctk.set_appearance_mode(new_appearance_mode)
 
     def start_service(self):
+        # ตรวจสอบสิทธิ์ Admin ก่อนเริ่มทำงาน
+        is_admin = False
+        try:
+            if os.name == 'nt':
+                import ctypes
+                is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            else:
+                is_admin = os.getuid() == 0
+        except AttributeError:
+            is_admin = False
+
+        if not is_admin:
+            messagebox.showerror("Admin Required", "กรุณารันโปรแกรมด้วยสิทธิ์ Administrator เพื่อจัดการ CPU Affinity")
+            self.log("❌ Error: Administrator privileges required.")
+            return
+
         self.running = True
         self.stop_event.clear()
         self.setup_dashboard()

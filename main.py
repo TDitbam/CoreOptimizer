@@ -106,11 +106,41 @@ def optimize_processes(stop_event, default_interval):
                     else:
                         cores_to_use = list(range(psutil.cpu_count()))
 
-                    # Apply Affinity and Priority
-                    set_process_cores(proc, cores_to_use)
-                    set_process_priority(proc, priority)
-                    
-                    print(f"[OPT] PID: {pid} | Process: {proc.info['name']} | Mode: {priority} | Cores: {len(cores_to_use)}")
+                    # Determine Target Priority Class
+                    if IS_WINDOWS:
+                        if priority in ['HIGH', 'P-CORE']:
+                            target_prio = psutil.HIGH_PRIORITY_CLASS
+                        elif priority in ['BELOW_NORMAL', 'E-CORE']:
+                            target_prio = psutil.BELOW_NORMAL_PRIORITY_CLASS
+                        else:
+                            target_prio = psutil.NORMAL_PRIORITY_CLASS
+                    else:
+                        if priority in ['HIGH', 'P-CORE']:
+                            target_prio = -10
+                        elif priority in ['BELOW_NORMAL', 'E-CORE']:
+                            target_prio = 5
+                        else:
+                            target_prio = 0
+
+                    try:
+                        # Only apply changes if current state is different
+                        # This prevents constant system calls that can "shake" a process
+                        current_affinity = proc.cpu_affinity()
+                        current_prio = proc.nice()
+                        
+                        changed = False
+                        if sorted(current_affinity) != sorted(cores_to_use):
+                            set_process_cores(proc, cores_to_use)
+                            changed = True
+                        
+                        if current_prio != target_prio:
+                            set_process_priority(proc, priority)
+                            changed = True
+                            
+                        if changed:
+                            print(f"[OPT] PID: {pid} | Process: {proc.info['name']} | Mode: {priority} | Cores: {len(cores_to_use)}")
+                    except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
+                        continue
                         
             except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
                 continue
@@ -136,6 +166,17 @@ def main():
     app.run()
 
 if __name__ == '__main__':
+    # Automatic Administrator Elevation for Windows
+    if os.name == 'nt':
+        import ctypes
+        if not ctypes.windll.shell32.IsUserAnAdmin():
+            print("[*] Requesting Administrator privileges...")
+            # Relaunch the program with admin rights
+            script = os.path.abspath(sys.argv[0])
+            params = ' '.join(sys.argv[1:])
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+            sys.exit(0)
+
     try:
         # Check for --cli flag to run in terminal mode
         if "--cli" in sys.argv:
