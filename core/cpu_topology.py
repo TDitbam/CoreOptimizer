@@ -7,6 +7,8 @@ def split_p_e_cores(exclude_core_0=True):
     """
 
     logical = psutil.cpu_count(logical=True)
+    if logical is None:
+        return [0], [] # Safety fallback
 
     # fallback old CPU
     if logical <= 8:

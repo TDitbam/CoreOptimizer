@@ -14,7 +14,7 @@ def get_optimal_cores(exclude_core_0=True):
     """
     return split_p_e_cores(exclude_core_0)
 
-def set_process_priority(proc, priority_name):
+def set_process_priority(proc, priority_name, verbose=True):
     """
     Handles platform-specific priority settings.
     """
@@ -38,10 +38,10 @@ def set_process_priority(proc, priority_name):
             else:
                 nice_val = 0
             proc.nice(nice_val)
-        print(f"[OK] Priority set for {proc.name()} to {priority_name}")
-    except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess) as e:
-        pass
-    except AttributeError:
+        
+        if verbose:
+            print(f"[OK] Priority set for {proc.name()} to {priority_name}")
+    except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
         pass
 
 def set_process_cores(proc, cores_list):
@@ -52,20 +52,30 @@ def set_process_cores(proc, cores_list):
         pass
 
 def optimize_processes(stop_event, default_interval):
+    # Print targets info once if in CLI
+    is_cli = stop_event is None
+    if is_cli:
+        config_preview = load_config()
+        t_count = len(get_targets(config_preview))
+        p_count = len(get_paths(config_preview))
+        print(f"[*] Loaded: {t_count} Targets | {p_count} Managed Directories")
+        print(f"[*] Interval: {config_preview['Settings'].get('interval', default_interval)}s")
+        print("[*] Press Ctrl+C to stop.")
+
     while True:
         config = load_config()
         try:
             exclude_core_0 = config["Settings"].getboolean("exclude_core_0", fallback=True)
             interval = float(config["Settings"].get("interval", default_interval))
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, KeyError):
             exclude_core_0 = True
             interval = default_interval
-            print(f"[!] Invalid config values. Using defaults: interval={interval}, exclude_core_0={exclude_core_0}")
             
         p_cores, e_cores = get_optimal_cores(exclude_core_0)
         
         if not p_cores:
-            print("[!] Unable to detect P-cores/E-cores. Sleeping.")
+            if is_cli:
+                print("[!] Unable to detect P-cores/E-cores. Sleeping.")
             if stop_event and stop_event.is_set():
                 break
             time.sleep(interval)
@@ -74,10 +84,14 @@ def optimize_processes(stop_event, default_interval):
         targets_map = {name.lower(): priority.upper() for name, priority in get_targets(config)}
         paths_list = [(path.lower().replace('\\', '/'), priority.upper()) for path, priority in get_paths(config)]
         
-        # Iterate through processes once per loop for efficiency
+        # Iterate through processes
         for proc in psutil.process_iter(['pid', 'name', 'exe']):
             try:
-                name = proc.info['name'].lower()
+                raw_name = proc.info['name']
+                if not raw_name:
+                    continue
+                name = raw_name.lower()
+                
                 exe_path = proc.info['exe']
                 if exe_path:
                     exe_path = exe_path.lower().replace('\\', '/')
@@ -88,7 +102,7 @@ def optimize_processes(stop_event, default_interval):
                 if name in targets_map:
                     priority = targets_map[name]
                 
-                # Match 2: Path-based (if not already matched)
+                # Match 2: Path-based
                 if not priority and exe_path:
                     for folder, p_val in paths_list:
                         if exe_path.startswith(folder):
@@ -123,8 +137,6 @@ def optimize_processes(stop_event, default_interval):
                             target_prio = 0
 
                     try:
-                        # Only apply changes if current state is different
-                        # This prevents constant system calls that can "shake" a process
                         current_affinity = proc.cpu_affinity()
                         current_prio = proc.nice()
                         
@@ -134,11 +146,11 @@ def optimize_processes(stop_event, default_interval):
                             changed = True
                         
                         if current_prio != target_prio:
-                            set_process_priority(proc, priority)
+                            set_process_priority(proc, priority, verbose=False) # Silent in loop, we print below
                             changed = True
                             
                         if changed:
-                            print(f"[OPT] PID: {pid} | Process: {proc.info['name']} | Mode: {priority} | Cores: {len(cores_to_use)}")
+                            print(f"[OPT] PID: {pid} | Process: {raw_name} | Mode: {priority} | Cores: {len(cores_to_use)}")
                     except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
                         continue
                         
