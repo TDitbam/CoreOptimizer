@@ -1,5 +1,5 @@
 @echo off
-set VERSION=v2.0.0
+set VERSION=v2.2.1
 set RELEASE_DIR=Release_%VERSION%
 
 echo [*] Starting Build and Packaging Process for %VERSION%...
