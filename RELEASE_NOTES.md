@@ -1,7 +1,14 @@
-# Release Notes - v2.2.2
+# 🚀 บันทึกการอัปเดต (Release Notes) - CorePriority Pro v2.2.2
 
-## Changes:
-- Integrated System Tray functionality to allow background operation.
-- The application now minimizes to the system tray instead of closing when the 'X' button is pressed.
-- Added 'Restore' and 'Exit' options to the system tray menu.
-- Updated dependencies: added `pystray` and `Pillow`.
+## 🌟 มีอะไรใหม่ (What's New)
+- **System Tray Integration**: เพิ่มฟีเจอร์ย่อหน้าต่างโปรแกรมลงใน System Tray (ถาดระบบ) ช่วยให้โปรแกรมทำงานเบื้องหลังได้โดยไม่เกะกะหน้าจอ
+- **Minimized Operation**: เมื่อกดปิดหน้าต่าง (ปุ่ม X) โปรแกรมจะย่อลงถาดระบบแทนการปิดโปรแกรม เพื่อให้การจัดการ CPU Affinity ทำงานได้อย่างต่อเนื่อง
+- **System Tray Menu**: เพิ่มเมนูคลิกขวาที่ไอคอนในถาดระบบ เพื่อเลือก 'Restore' (กู้คืนหน้าต่าง) หรือ 'Exit' (ออกจากโปรแกรม)
+- **Updated Dependencies**: เพิ่มไลบรารี `pystray` และ `Pillow` เพื่อรองรับฟีเจอร์ System Tray
+
+## 📦 ข้อมูลทางเทคนิค (Technical Details)
+- **อินเตอร์เฟส**: CustomTkinter 5.2.2
+- **การจัดการถาดระบบ**: pystray 0.19.5, Pillow 12.2.0
+
+----
+*สร้างขึ้นด้วยความใส่ใจ เพื่อให้ทุกเฟรมของคุณลื่นไหลที่สุด*
