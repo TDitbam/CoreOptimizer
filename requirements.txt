@@ -2,3 +2,5 @@ psutil==5.9.8
 customtkinter==5.2.2
 darkdetect
 pytest==8.2.2
+pystray
+Pillow

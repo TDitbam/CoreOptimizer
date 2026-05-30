@@ -4,6 +4,8 @@ import threading
 import sys
 import os
 import psutil
+import pystray
+from PIL import Image
 from core.config_loader import load_config, save_config, get_targets, get_paths
 from core.cpu_topology import split_p_e_cores
 from core.cleaner import clean_junk
@@ -35,6 +37,10 @@ class App(ctk.CTk):
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
+
+        # SYSTEM TRAY SETUP
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.icon = None
 
         # SIDEBAR
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
@@ -72,6 +78,31 @@ class App(ctk.CTk):
         self.setup_cleanup()
 
         self.show_dashboard()
+        self.setup_tray()
+
+    def setup_tray(self):
+        # Create a simple icon (e.g., a colored square)
+        image = Image.new('RGB', (64, 64), color=(0, 120, 215))
+        
+        menu = pystray.Menu(
+            pystray.MenuItem("Restore", self.show_window),
+            pystray.MenuItem("Exit", self.quit_app)
+        )
+        self.icon = pystray.Icon("P-Core Optimizer", image, "P-Core Optimizer Pro", menu)
+        threading.Thread(target=self.icon.run, daemon=True).start()
+
+    def on_closing(self):
+        self.withdraw()
+        self.log("Minimized to tray.")
+
+    def show_window(self, icon, item):
+        self.deiconify()
+        self.lift()
+
+    def quit_app(self, icon, item):
+        self.icon.stop()
+        self.destroy()
+        sys.exit()
 
     def setup_dashboard(self):
         for widget in self.dashboard_frame.winfo_children():

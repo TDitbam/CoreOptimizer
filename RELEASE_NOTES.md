@@ -1,34 +1,7 @@
-# 🚀 บันทึกการอัปเดต (Release Notes) - CorePriority Pro v2.2.1
+# Release Notes - v2.2.2
 
-## 📝 ภาพรวม (Overview)
-เวอร์ชัน 2.2.1 เป็นการอัปเดตครั้งสำคัญที่เปลี่ยนผ่านมาตรฐานการจัดการคอร์ CPU แบบใหม่ (P-CORE Only) พร้อมระบบติดตั้งอย่างเป็นทางการ และการเพิ่มฟีเจอร์รักษาความสะอาดระบบ (System Junk Cleaner) เพื่อให้เครื่องคอมพิวเตอร์ของคุณพร้อมสำหรับการเล่นเกมที่สุด
-
-## 🌟 มีอะไรใหม่ (What's New)
-- **Official Installer**: เพิ่มตัวติดตั้ง Windows Installer (.exe) เพื่อความสะดวกในการติดตั้งและถอนโปรแกรม
-- **Auto-Elevation**: ระบบเรียกสิทธิ์ Administrator อัตโนมัติเมื่อเปิดโปรแกรม เพื่อให้สามารถจัดการ CPU Affinity ได้ทันที
-- **P-CORE Standardization**: ยกระดับโหมด P-CORE เป็นมาตรฐานหลัก ตัดปัญหาการสลับคอร์ไปมา (Core hopping) และอาการ Micro-stuttering
-- **Optimization Zones**: รองรับการระบุทั้งโฟลเดอร์เกม (เช่น D:\Games) โปรแกรมจะตรวจจับและรีดประสิทธิภาพให้ทุกเกมที่รันจากโฟลเดอร์นั้นโดยอัตโนมัติ
-- **System Junk Cleaner**: ฟีเจอร์ล้างไฟล์ขยะในเครื่อง (Temp Files, Prefetch) เพื่อเพิ่มพื้นที่ว่างและลดภาระระบบ
-
-## 🛠 รายการแก้ไข (Bug Fixes)
-- แก้ไขบั๊กการอ่านไฟล์ Config ที่อาจทำให้โปรแกรมหยุดทำงานในบางกรณี
-- ปรับปรุง UI ให้ลื่นไหลขึ้นด้วยระบบ Background Threading (หน้าจอไม่ค้างขณะสแกนหน้า Dashboard)
-- ปรับปรุงการตรวจจับ Intel P/E Cores ให้แม่นยำยิ่งขึ้นบน Windows 10/11
-
-## 📦 ข้อมูลการติดตั้ง (Installation)
-1. รันไฟล์ `CorePriorityPro_v2.2.1_Setup.exe`
-2. ทำตามขั้นตอนในหน้าจอเพื่อติดตั้ง
-3. เปิดโปรแกรมจาก Shortcut บน Desktop (จะมีการขอสิทธิ์ Admin อัตโนมัติ)
-
-## 🎮 วิธีใช้งาน (How to Use)
-1. เพิ่มชื่อไฟล์เกม หรือเลือกโฟลเดอร์เกมในหน้า **Settings**
-2. กลับไปที่หน้า Dashboard แล้วกด **START OPTIMIZER**
-3. หากต้องการล้างไฟล์ขยะ ให้ไปที่เมนู **Cleanup** แล้วกด **START CLEANING**
-
-## 📦 ข้อมูลทางเทคนิค (Technical Details)
-- **เครื่องมือที่ใช้สร้าง**: PyInstaller 6.20.0 & Inno Setup 6.3.3
-- **อินเตอร์เฟส**: CustomTkinter 5.2.2
-- **ระบบปฏิบัติการที่รองรับ**: Windows 10/11 (แนะนำเป็นพิเศษสำหรับ Intel Gen 12 ขึ้นไป)
-
----
-*สร้างขึ้นด้วยความใส่ใจ เพื่อให้ทุกเฟรมของคุณลื่นไหลที่สุด*
+## Changes:
+- Integrated System Tray functionality to allow background operation.
+- The application now minimizes to the system tray instead of closing when the 'X' button is pressed.
+- Added 'Restore' and 'Exit' options to the system tray menu.
+- Updated dependencies: added `pystray` and `Pillow`.
