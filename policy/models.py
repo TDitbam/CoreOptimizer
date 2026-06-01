@@ -9,7 +9,7 @@ class PolicyType(Enum):
 
 @dataclass(frozen=True)
 class Decision:
-    priority: int # 0=Normal, 1=High/BelowNormal (Need to unify mapping)
+    priority: int
     policy_type: PolicyType
     disable_smt: bool
 

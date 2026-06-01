@@ -39,14 +39,12 @@ def get_cpu_topology_windows():
 
     try:
         kernel32 = ctypes.windll.kernel32
-        # Get required buffer size
         buffer_size = wintypes.DWORD(0)
         kernel32.GetLogicalProcessorInformationEx(RelationProcessorCore, None, ctypes.byref(buffer_size))
         
         if buffer_size.value == 0:
             return None
             
-        # Allocate buffer
         buffer = ctypes.create_string_buffer(buffer_size.value)
         if not kernel32.GetLogicalProcessorInformationEx(RelationProcessorCore, buffer, ctypes.byref(buffer_size)):
             return None
@@ -54,7 +52,6 @@ def get_cpu_topology_windows():
         topology = []
         offset = 0
         while offset < buffer_size.value:
-            # Cast current buffer position
             addr = ctypes.addressof(buffer) + offset
             info = ctypes.cast(addr, ctypes.POINTER(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)).contents
             
@@ -64,9 +61,6 @@ def get_cpu_topology_windows():
                 
                 logical_cores = []
                 for g in range(proc.GroupCount):
-                    # For RelationProcessorCore, GroupMask is at least size 1. 
-                    # If GroupCount > 1, we'd need to handle variable sizing, 
-                    # but for single cores it's usually 1.
                     mask = proc.GroupMask[g].Mask
                     group_offset = proc.GroupMask[g].Group * 64
                     
@@ -76,7 +70,7 @@ def get_cpu_topology_windows():
                 
                 topology.append((logical_cores, eff_class))
             
-            if info.Size == 0: break # Safety break
+            if info.Size == 0: break
             offset += info.Size
             
         return topology
@@ -84,68 +78,37 @@ def get_cpu_topology_windows():
         return None
 
 def get_cpu_topology():
-    """
-    Groups logical cores into physical core pairs/groups using SMT heuristic.
-    Used as fallback for non-Windows or if API fails.
-    """
     logical = psutil.cpu_count(logical=True)
     physical = psutil.cpu_count(logical=False)
-    
-    if logical is None or physical is None:
-        return []
-
+    if logical is None or physical is None: return []
     smt_pairs_count = logical - physical
     topology = []
-    
-    for i in range(smt_pairs_count):
-        topology.append([2*i, 2*i + 1])
-    
-    start_logical_index = smt_pairs_count * 2
-    for i in range(start_logical_index, logical):
-        topology.append([i])
-        
+    for i in range(smt_pairs_count): topology.append([2*i, 2*i + 1])
+    for i in range(smt_pairs_count * 2, logical): topology.append([i])
     return topology
 
 def calculate_affinity_mask(cores_list):
-    """
-    Calculates CPU Affinity Bitmask from a list of logical core IDs.
-    """
     mask = 0
     for core in cores_list:
-        if isinstance(core, int):
-            mask |= (1 << core)
+        if isinstance(core, int): mask |= (1 << core)
     return mask
 
 def split_p_e_cores(exclude_core_0=True, disable_smt=False):
-    """
-    Splits cores into P-cores and E-cores.
-    Prioritizes Windows API for EfficiencyClass, falls back to SMT heuristic.
-    If disable_smt is True, only the first logical core of each physical core is used.
-    """
-    # 1. Try Robust Windows Detection
     win_topo = get_cpu_topology_windows()
     if win_topo:
-        # Determine unique efficiency classes
         all_classes = sorted(list(set(t[1] for t in win_topo)))
-        
         p_phys_cores = []
         e_phys_cores = []
-        
         if len(all_classes) > 1:
-            # Hybrid architecture detected
-            max_class = all_classes[-1] # Highest is P-core
+            max_class = all_classes[-1]
             for cores, eff in win_topo:
-                if eff == max_class:
-                    p_phys_cores.append(cores)
-                else:
-                    e_phys_cores.append(cores)
+                if eff == max_class: p_phys_cores.append(cores)
+                else: e_phys_cores.append(cores)
         else:
-            # Non-hybrid or everything is the same
             p_phys_cores = [t[0] for t in win_topo]
             e_phys_cores = []
             
-        if exclude_core_0 and p_phys_cores:
-            p_phys_cores = p_phys_cores[1:]
+        if exclude_core_0 and p_phys_cores: p_phys_cores = p_phys_cores[1:]
             
         if disable_smt:
             p_cores = [phys[0] for phys in p_phys_cores]
@@ -153,21 +116,15 @@ def split_p_e_cores(exclude_core_0=True, disable_smt=False):
         else:
             p_cores = [c for phys in p_phys_cores for c in phys]
             e_cores = [c for phys in e_phys_cores for c in phys]
-            
         return p_cores, e_cores
 
-    # 2. Fallback to SMT Heuristic
     topology = get_cpu_topology()
-    if not topology:
-        return [0], []
-
+    if not topology: return [0], []
     logical = psutil.cpu_count(logical=True)
     physical = psutil.cpu_count(logical=False)
     smt_pairs_count = logical - physical
-
     p_phys_groups = []
     e_phys_groups = []
-
     if smt_pairs_count > 0:
         if smt_pairs_count < physical:
             p_phys_groups = topology[:smt_pairs_count]
@@ -178,16 +135,11 @@ def split_p_e_cores(exclude_core_0=True, disable_smt=False):
     else:
         p_phys_groups = topology
         e_phys_groups = []
-
-    if exclude_core_0 and p_phys_groups:
-        p_phys_groups = p_phys_groups[1:]
-
+    if exclude_core_0 and p_phys_groups: p_phys_groups = p_phys_groups[1:]
     if disable_smt:
-        # Only take the first core of each group
         p_cores = [phys[0] for phys in p_phys_groups]
         e_cores = [phys[0] for phys in e_phys_groups]
     else:
         p_cores = [core for phys in p_phys_groups for core in phys]
         e_cores = [core for phys in e_phys_groups for core in phys]
-
     return p_cores, e_cores
