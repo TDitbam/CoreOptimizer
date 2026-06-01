@@ -151,7 +151,7 @@ def optimize_processes(stop_event, default_interval):
                             
                         if changed:
                             mask = calculate_affinity_mask(cores_to_use)
-                            print(f"[OPT] PID: {pid} | Process: {raw_name} | Mode: {priority} | Cores: {len(cores_to_use)} | Mask: {hex(mask)}")
+                            print(f"[OPT] PID: {pid} | Process: {raw_name} | Mode: {priority} | Mask: {hex(mask)} | Cores: {cores_to_use}")
                     except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
                         continue
                         
