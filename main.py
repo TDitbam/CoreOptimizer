@@ -186,10 +186,17 @@ if __name__ == '__main__':
         import ctypes
         if not ctypes.windll.shell32.IsUserAnAdmin():
             print("[*] Requesting Administrator privileges...")
-            # Relaunch the program with admin rights
-            script = os.path.abspath(sys.argv[0])
-            params = ' '.join(sys.argv[1:])
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+            # Detect if running as frozen EXE or script
+            if getattr(sys, 'frozen', False):
+                # Frozen EXE: sys.executable is the EXE path
+                executable = sys.executable
+                params = ' '.join(sys.argv[1:])
+            else:
+                # Script: sys.executable is python.exe, sys.argv[0] is the script
+                executable = sys.executable
+                params = f'"{os.path.abspath(sys.argv[0])}" ' + ' '.join(sys.argv[1:])
+            
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, params, None, 1)
             sys.exit(0)
 
     try:
