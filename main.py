@@ -5,52 +5,14 @@ import sys
 from core.config_loader import load_config, get_targets, get_paths, save_config
 from core.cpu_topology import split_p_e_cores, calculate_affinity_mask
 from core.cleaner import clean_junk
+from engine.cache import ProcessStateCache
+from engine.enforcer import Enforcer
+from engine.registry import ProcessRegistry
+from policy.models import CorePool
+from policy.engine import PolicyEngine
 
 # Platform detection for priority/affinity logic
 IS_WINDOWS = os.name == 'nt'
-
-def get_optimal_cores(exclude_core_0=True, disable_smt=False):
-    """
-    Returns detected P-cores and E-cores from cpu_topology based on setting.
-    """
-    return split_p_e_cores(exclude_core_0, disable_smt)
-
-def set_process_priority(proc, priority_name, verbose=True):
-    """
-    Handles platform-specific priority settings.
-    """
-    priority_name = priority_name.upper()
-    try:
-        if IS_WINDOWS:
-            # Windows Priority Classes
-            if priority_name in ['HIGH', 'P-CORE']:
-                p_class = psutil.HIGH_PRIORITY_CLASS
-            elif priority_name in ['BELOW_NORMAL', 'E-CORE']:
-                p_class = psutil.BELOW_NORMAL_PRIORITY_CLASS
-            else:
-                p_class = psutil.NORMAL_PRIORITY_CLASS
-            proc.nice(p_class)
-        else:
-            # Linux/macOS Nice Value (-20 high priority, 19 low priority)
-            if priority_name in ['HIGH', 'P-CORE']:
-                nice_val = -10 # Higher priority
-            elif priority_name in ['BELOW_NORMAL', 'E-CORE']:
-                nice_val = 5   # Lower priority
-            else:
-                nice_val = 0
-            proc.nice(nice_val)
-        
-        if verbose:
-            print(f"[OK] Priority set for {proc.name()} to {priority_name}")
-    except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
-        pass
-
-def set_process_cores(proc, cores_list):
-    """Sets CPU affinity for the process."""
-    try:
-        proc.cpu_affinity(cores_list)
-    except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess, NotImplementedError):
-        pass
 
 def optimize_processes(stop_event, default_interval):
     # Print targets info once if in CLI
@@ -62,6 +24,22 @@ def optimize_processes(stop_event, default_interval):
         print(f"[*] Loaded: {t_count} Targets | {p_count} Managed Directories")
         print(f"[*] Interval: {config_preview['Settings'].get('interval', default_interval)}s")
         print("[*] Press Ctrl+C to stop.")
+
+    # Initialize v3 Engine
+    cache = ProcessStateCache()
+    registry = ProcessRegistry()
+    
+    # Initial topology detection
+    exclude_core_0 = True 
+    disable_smt = False
+    p_cores, e_cores = split_p_e_cores(exclude_core_0, disable_smt)
+    core_pool = CorePool(performance_cores=p_cores, efficiency_cores=e_cores, is_hybrid=len(e_cores) > 0)
+    
+    enforcer = Enforcer(cache, core_pool)
+    
+    # Track topology settings for changes
+    last_exclude_core_0 = exclude_core_0
+    last_disable_smt = disable_smt
 
     while True:
         config = load_config()
@@ -78,116 +56,55 @@ def optimize_processes(stop_event, default_interval):
             last_cleanup = 0
             interval = default_interval
             
-        # Auto Cleanup Logic (Runs every 30 seconds if enabled)
+        # Update CorePool if settings changed
+        if exclude_core_0 != last_exclude_core_0 or disable_smt != last_disable_smt:
+             p_cores, e_cores = split_p_e_cores(exclude_core_0, disable_smt)
+             core_pool = CorePool(performance_cores=p_cores, efficiency_cores=e_cores, is_hybrid=len(e_cores) > 0)
+             enforcer.core_pool = core_pool
+             last_exclude_core_0 = exclude_core_0
+             last_disable_smt = disable_smt
+
+        # Policy Engine
+        policy_engine = PolicyEngine(dict(get_targets(config)), get_paths(config))
+            
+        # Auto Cleanup Logic
         current_time = time.time()
         if auto_cleanup and (current_time - last_cleanup > 30):
-            if is_cli:
-                print("[*] Running Auto Junk Cleanup...")
-            # Run in a separate thread if possible, but in CLI/Main loop simple is fine
             files, bytes_saved = clean_junk()
-            if is_cli:
-                print(f"[OK] Auto Cleanup finished: {files} files deleted, {bytes_saved // 1024} KB saved.")
-            
-            # Update last cleanup time
             config["Settings"]["last_cleanup"] = str(current_time)
             save_config(config)
 
-        p_cores, e_cores = get_optimal_cores(exclude_core_0, disable_smt)
-        
-        if not p_cores:
-            if is_cli:
-                print("[!] Unable to detect P-cores/E-cores. Sleeping.")
-            if stop_event and stop_event.is_set():
-                break
-            time.sleep(interval)
-            continue
-
-        targets_map = {name.lower(): priority.upper() for name, priority in get_targets(config)}
-        paths_list = [(path.lower().replace('\\', '/'), priority.upper()) for path, priority in get_paths(config)]
-        
-        # Iterate through processes
-        for proc in psutil.process_iter(['pid', 'name', 'exe']):
+        # Process Tracking
+        active_pids = {}
+        for proc in psutil.process_iter(['pid', 'name', 'exe', 'create_time']):
             try:
-                raw_name = proc.info['name']
-                if not raw_name:
-                    continue
-                name = raw_name.lower()
+                if not proc.info['pid'] or not proc.info['name']: continue
                 
-                exe_path = proc.info['exe']
-                if exe_path:
-                    exe_path = exe_path.lower().replace('\\', '/')
+                # Get Decision
+                exe_path = proc.info['exe'] or ""
+                decision = policy_engine.decide(proc.info['name'], exe_path, disable_smt)
                 
-                priority = None
+                # State Machine
+                state = registry.update_or_create(proc.pid, proc.info['create_time'], exe_path)
                 
-                # Match 1: Filename
-                if name in targets_map:
-                    priority = targets_map[name]
+                # Get cores from enforcer helper mapping (or recalculate)
+                cores, _ = enforcer._map_decision_to_hardware(decision)
                 
-                # Match 2: Path-based
-                if not priority and exe_path:
-                    for folder, p_val in paths_list:
-                        if exe_path.startswith(folder):
-                            priority = p_val
-                            break
-                
-                if priority:
-                    pid = proc.pid
-                    
-                    # Determine Cores
-                    if priority in ['HIGH', 'P-CORE']:
-                        cores_to_use = p_cores
-                    elif priority == 'E-CORE':
-                        cores_to_use = e_cores
-                    else:
-                        cores_to_use = list(range(psutil.cpu_count()))
+                # Enforce
+                if enforcer.enforce(proc, state, decision):
+                     mask = calculate_affinity_mask(cores)
+                     print(f"[OPT] PID: {proc.pid} | Process: {proc.info['name']} | Mode: {decision.policy_type.value} | Mask: {hex(mask)} | Cores: {cores}")
 
-                    # Determine Target Priority Class
-                    if IS_WINDOWS:
-                        if priority in ['HIGH', 'P-CORE']:
-                            target_prio = psutil.HIGH_PRIORITY_CLASS
-                        elif priority in ['BELOW_NORMAL', 'E-CORE']:
-                            target_prio = psutil.BELOW_NORMAL_PRIORITY_CLASS
-                        else:
-                            target_prio = psutil.NORMAL_PRIORITY_CLASS
-                    else:
-                        if priority in ['HIGH', 'P-CORE']:
-                            target_prio = -10
-                        elif priority in ['BELOW_NORMAL', 'E-CORE']:
-                            target_prio = 5
-                        else:
-                            target_prio = 0
-
-                    try:
-                        current_affinity = proc.cpu_affinity()
-                        current_prio = proc.nice()
-                        
-                        changed = False
-                        if sorted(current_affinity) != sorted(cores_to_use):
-                            set_process_cores(proc, cores_to_use)
-                            changed = True
-                        
-                        if current_prio != target_prio:
-                            set_process_priority(proc, priority, verbose=False) # Silent in loop, we print below
-                            changed = True
-                            
-                        if changed:
-                            mask = calculate_affinity_mask(cores_to_use)
-                            print(f"[OPT] PID: {pid} | Process: {raw_name} | Mode: {priority} | Mask: {hex(mask)} | Cores: {cores_to_use}")
-                    except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
-                        continue
-                        
+                active_pids[registry.get_entry_key(proc.pid, proc.info['create_time'], exe_path)] = True
             except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
                 continue
+                
+        registry.remove_stale(active_pids)
 
-        # Sleep loop logic
-        if stop_event and stop_event.is_set():
-            print("\n[INFO] Optimization stopped.")
-            break
-            
-        if not stop_event:
-            time.sleep(interval)
-        else:
-            stop_event.wait(interval)
+        # Sleep logic
+        if stop_event and stop_event.is_set(): break
+        if stop_event: stop_event.wait(interval)
+        else: time.sleep(interval)
 
 def run_cli():
     print("[*] Optimizing processes with CorePriority (CLI Mode)...")

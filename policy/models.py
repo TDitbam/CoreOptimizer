@@ -1,0 +1,17 @@
+from dataclasses import dataclass
+from enum import Enum
+from typing import Tuple
+
+class PolicyType(Enum):
+    P_CORE = "P-CORE"
+    E_CORE = "E-CORE"
+    NORMAL = "NORMAL"
+
+@dataclass(frozen=True)
+class Decision:
+    priority: int # 0=Normal, 1=High/BelowNormal (Need to unify mapping)
+    policy_type: PolicyType
+    disable_smt: bool
+
+    def get_stable_id(self) -> Tuple:
+        return (self.priority, self.policy_type.value, self.disable_smt)
