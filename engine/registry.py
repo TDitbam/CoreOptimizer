@@ -4,7 +4,6 @@ from typing import Dict, Tuple, Optional
 
 STATE_NEW = "NEW"
 STATE_STABLE = "STABLE"
-STATE_TERMINATING = "TERMINATING"
 
 @dataclass
 class ProcessState:
@@ -29,7 +28,10 @@ class ProcessRegistry:
             self._entries[key] = ProcessState(pid, create_time, exe_hash)
         return self._entries[key]
 
-    def remove_stale(self, active_keys):
+    def remove_stale(self, active_keys: Dict[Tuple, bool]):
         for key in list(self._entries.keys()):
             if key not in active_keys:
                 del self._entries[key]
+
+    def get_entry_key(self, pid: int, create_time: float, exe_path: str) -> Tuple:
+        return (pid, create_time, self._get_exe_hash(exe_path))

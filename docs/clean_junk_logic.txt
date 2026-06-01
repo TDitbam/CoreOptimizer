@@ -7,6 +7,7 @@
    ระบบจะเข้าไปตรวจสอบในพื้นที่ชั่วคราวหลักของ Windows:
    - User Temp (%TEMP%): โฟลเดอร์เก็บไฟล์ชั่วคราวของผู้ใช้งานปัจจุบัน
    - System Temp (C:\Windows\Temp): โฟลเดอร์เก็บไฟล์ชั่วคราวของระบบ Windows
+   - GPU Shader Cache: ลบไฟล์ Cache ของการ์ดจอ (NVIDIA DXCache/GLCache, AMD DXCache และ Intel) เพื่อช่วยแก้ปัญหาอาการกระตุก (Stutter) ในบางเกม
 
 2. ระบบความปลอดภัยขั้นสูง (Safety Measures):
    - 🌟 ระบบ Whitelist: ระบบจะไม่แตะต้องโฟลเดอร์ที่มีชื่อเกี่ยวข้องกับค่ายเกมและโปรแกรมสำคัญ เช่น Steam, Epic, Unity, Unreal, Hoyoverse, Discord และอื่นๆ แม้จะอยู่ในโฟลเดอร์ Temp ก็ตาม

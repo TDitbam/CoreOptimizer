@@ -11,6 +11,7 @@ def load_config():
             "exclude_core_0": "true",
             "disable_smt": "false",
             "auto_cleanup": "false",
+            "cleanup_interval": "1440",
             "last_cleanup": "0"
         }
         config["Targets"] = {"BlackDesert64.exe": "P-CORE", "cs2.exe": "P-CORE", "cyberpunk2077.exe": "P-CORE"}

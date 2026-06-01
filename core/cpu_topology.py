@@ -108,7 +108,8 @@ def split_p_e_cores(exclude_core_0=True, disable_smt=False):
             p_phys_cores = [t[0] for t in win_topo]
             e_phys_cores = []
             
-        if exclude_core_0 and p_phys_cores: p_phys_cores = p_phys_cores[1:]
+        if exclude_core_0 and len(p_phys_cores) > 1:
+            p_phys_cores = p_phys_cores[1:]
             
         if disable_smt:
             p_cores = [phys[0] for phys in p_phys_cores]
@@ -116,7 +117,7 @@ def split_p_e_cores(exclude_core_0=True, disable_smt=False):
         else:
             p_cores = [c for phys in p_phys_cores for c in phys]
             e_cores = [c for phys in e_phys_cores for c in phys]
-        return p_cores, e_cores
+        return p_cores or [0], e_cores
 
     topology = get_cpu_topology()
     if not topology: return [0], []
@@ -135,11 +136,12 @@ def split_p_e_cores(exclude_core_0=True, disable_smt=False):
     else:
         p_phys_groups = topology
         e_phys_groups = []
-    if exclude_core_0 and p_phys_groups: p_phys_groups = p_phys_groups[1:]
+    if exclude_core_0 and len(p_phys_groups) > 1:
+        p_phys_groups = p_phys_groups[1:]
     if disable_smt:
         p_cores = [phys[0] for phys in p_phys_groups]
         e_cores = [phys[0] for phys in e_phys_groups]
     else:
         p_cores = [core for phys in p_phys_groups for core in phys]
         e_cores = [core for phys in e_phys_groups for core in phys]
-    return p_cores, e_cores
+    return p_cores or [0], e_cores

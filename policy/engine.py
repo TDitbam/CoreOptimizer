@@ -22,8 +22,10 @@ class PolicyEngine:
         return Decision(priority=priority, policy_type=policy_type, disable_smt=disable_smt)
 
     def _match_policy(self, proc_name: str, proc_path: str) -> str:
-        if proc_name.lower() in self.targets:
-            return self.targets[proc_name.lower()]
+        name_lower = proc_name.lower()
+        if name_lower in self.targets:
+            return self.targets[name_lower]
+        
         if proc_path:
             norm_path = proc_path.lower().replace('\\', '/')
             for folder, policy in self.paths:
