@@ -78,9 +78,9 @@ def optimize_processes(stop_event, default_interval):
             last_cleanup = 0
             interval = default_interval
             
-        # Auto Cleanup Logic (Runs every 24 hours if enabled)
+        # Auto Cleanup Logic (Runs every 30 seconds if enabled)
         current_time = time.time()
-        if auto_cleanup and (current_time - last_cleanup > 86400):
+        if auto_cleanup and (current_time - last_cleanup > 30):
             if is_cli:
                 print("[*] Running Auto Junk Cleanup...")
             # Run in a separate thread if possible, but in CLI/Main loop simple is fine
