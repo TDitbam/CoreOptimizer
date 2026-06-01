@@ -8,11 +8,11 @@ from core.cpu_topology import split_p_e_cores, calculate_affinity_mask
 # Platform detection for priority/affinity logic
 IS_WINDOWS = os.name == 'nt'
 
-def get_optimal_cores(exclude_core_0=True):
+def get_optimal_cores(exclude_core_0=True, disable_smt=False):
     """
     Returns detected P-cores and E-cores from cpu_topology based on setting.
     """
-    return split_p_e_cores(exclude_core_0)
+    return split_p_e_cores(exclude_core_0, disable_smt)
 
 def set_process_priority(proc, priority_name, verbose=True):
     """
@@ -66,12 +66,14 @@ def optimize_processes(stop_event, default_interval):
         config = load_config()
         try:
             exclude_core_0 = config["Settings"].getboolean("exclude_core_0", fallback=True)
+            disable_smt = config["Settings"].getboolean("disable_smt", fallback=False)
             interval = float(config["Settings"].get("interval", default_interval))
         except (ValueError, TypeError, KeyError):
             exclude_core_0 = True
+            disable_smt = False
             interval = default_interval
             
-        p_cores, e_cores = get_optimal_cores(exclude_core_0)
+        p_cores, e_cores = get_optimal_cores(exclude_core_0, disable_smt)
         
         if not p_cores:
             if is_cli:

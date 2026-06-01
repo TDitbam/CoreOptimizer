@@ -1,16 +1,16 @@
-# 🚀 บันทึกการอัปเดต (Release Notes) - CorePriority Pro v2.2.2
+# 🚀 บันทึกการอัปเดต (Release Notes) - CorePriority Pro v2.2.3
 
 ## 🌟 มีอะไรใหม่ (What's New)
-- **Robust CPU Topology Logic**: ปรับปรุงระบบตรวจจับ Core ใหม่ทั้งหมด รองรับ Hybrid CPUs (Intel 12th Gen+) และระบบ SMT (Hyper-Threading) ได้อย่างแม่นยำ
-- **Smart SMT Handling**: เมื่อเลือก 'Exclude Core 0' ระบบจะสั่งปิด Logical Core ทั้งหมดที่อยู่บน Physical Core เดียวกันโดยอัตโนมัติ เพื่อประสิทธิภาพสูงสุด
-- **Affinity Mask Calculation**: เพิ่มการคำนวณ Bitmask สำหรับ CPU Affinity ทำให้การจัดการ Core ทำงานในระดับลึก (System Level) ได้เสถียรยิ่งขึ้น
-- **Enhanced Error Handling**: เพิ่มระบบดักจับ Exception สำหรับสิทธิ์การเข้าถึง (Admin Rights) และกระบวนการที่ถูกป้องกันโดยระบบ
-- **System Tray Integration**: สามารถย่อหน้าต่างลงใน System Tray เพื่อทำงานเบื้องหลังได้
-- **Updated Dependencies**: อัปเดตไลบรารีเพื่อความเสถียรและการจัดการทรัพยากรที่ดีขึ้น
+- **Windows API Robust Detection**: เปลี่ยนมาใช้ `EfficiencyClass` จาก Windows API โดยตรง ทำให้แยกแยะ P-Core และ E-Core ได้ถูกต้อง 100% แม้จะปิด Hyper-Threading (SMT) ใน BIOS
+- **Manual SMT Control (Phys Only)**: เพิ่มฟีเจอร์ "Disable SMT (Phys Only)" ในหน้า Settings เพื่อบังคับให้โปรแกรมใช้เฉพาะ Physical Cores (Thread แรกของแต่ละ Core) เพื่อลด Latency
+- **Multi-Group CPU Support**: รองรับ CPU ที่มีมากกว่า 64 Logical Processors (เช่น Threadripper, Xeon)
+- **Improved UI Dashboard**: แสดงจำนวน Core แยกประเภทแบบ Real-time ตามโหมดการทำงานที่เลือก
+- **Bug Fixes**: แก้ไขปัญหา IndentationError ใน main loop และปรับปรุงความเสถียรของการบันทึก Config
 
 ## 📦 ข้อมูลทางเทคนิค (Technical Details)
-- **อินเตอร์เฟส**: CustomTkinter 5.2.2
-- **การจัดการถาดระบบ**: pystray 0.19.5, Pillow 12.2.0
+- **API**: Windows GetLogicalProcessorInformationEx
+- **ความต้องการ**: Windows 10/11 (สำหรับ Hybrid Detection)
+- **สิทธิ์การใช้งาน**: ต้องรันด้วย Administrator
 
 ----
 *สร้างขึ้นด้วยความใส่ใจ เพื่อให้ทุกเฟรมของคุณลื่นไหลที่สุด*

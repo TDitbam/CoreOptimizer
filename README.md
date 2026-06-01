@@ -1,80 +1,60 @@
-# P-Core Optimizer Pro 🚀
+# CorePriority Pro 🚀 (v2.2.3)
 
-A powerful Windows utility designed to maximize game performance on modern Intel Hybrid CPUs (12th Gen+) by intelligently managing CPU affinity and process priority.
+[TH] **CorePriority Pro** คือสุดยอดเครื่องมือปรับแต่ง CPU ที่เกิดมาเพื่อ "เกมเมอร์" และ "สตรีมเมอร์" โดยเฉพาะ! ออกแบบมาเพื่อจัดการกับ CPU สถาปัตยกรรม Hybrid (Intel Gen 12 ขึ้นไป) ให้ทำงานได้เต็มประสิทธิภาพสูงสุด โดยการคุมให้เกมรันบน P-Core ที่แรงที่สุด และโยนงานเบื้องหลังไปไว้ที่ E-Core เพื่อไม่ให้มาดึงเฟรมเรตของคุณ
 
-## 🌟 Key Features
+[EN] **CorePriority Pro** is the ultimate CPU optimization utility built for gamers and streamers. Designed specifically for Intel Hybrid Architecture (12th Gen+), it ensures your games run exclusively on high-performance P-Cores while offloading background tasks to Efficiency Cores, eliminating micro-stutter and maximizing FPS.
 
-- **Intel Hybrid Architecture Support**: Automatically detects P-Cores (Performance) and E-Cores (Efficiency).
-- **Advanced Core Affinity**: 
-    - **P-CORE Mode**: Force critical apps/games onto high-performance cores.
-    - **E-CORE Mode**: Assign background tasks to efficiency cores to keep P-Cores free.
-    - **NORMAL Mode**: Let Windows manage threads naturally.
-- **Smart Optimization Zones**: 
-    - **Managed Games**: Target specific executables by name.
-    - **Managed Directories**: Automatically optimize *any* game launched from a specific folder (e.g., your Steam or Games library).
-- **System Junk Cleaner**: Integrated cleaner to remove temporary files and free up disk space.
-- **Real-time Configuration**: Changes in the GUI are saved and applied instantly without needing a restart.
-- **Core 0 Management**: Explicit toggle to exclude Core 0 from optimization to reserve it for OS tasks.
-- **Unified Entry Point**: Run as a modern GUI by default or use `--cli` for terminal-based operation.
-- **PC Scanner**: Quickly scan common directories to find and add game executables.
+---
 
-## 🛠 Project Structure
+## 🌟 จุดเด่นที่ทำให้เราแตกต่าง (Key Features)
 
-```text
-CoreOptimizer/
-├── core/
-│   ├── config_loader.py   # Centralized configuration management
-│   ├── cpu_topology.py    # Advanced CPU core detection
-│   ├── cleaner.py         # System junk cleaning logic
-│   └── process_optimizer.py # Legacy optimization helpers
-├── gui/
-│   └── gui.py             # Modern CustomTkinter interface
-├── config/
-│   └── config.ini         # Standardized user configuration
-├── main.py                # Main entry point (GUI/CLI)
-├── requirements.txt       # Dependencies
-└── README.md              # Documentation
+### 🇹🇭 [TH] ภาษาไทย
+- **🎯 แยก Core แม่นยำ 100% (ใหม่!):** เลิกสุ่ม! เราใช้ Windows API อ่านค่าจาก Hardware โดยตรง แยก P-Core และ E-Core ได้ถูกต้อง แม้คุณจะปิด Hyper-Threading ใน BIOS ก็ตาม
+- **⚡ ระบบคุม SMT อัจฉริยะ (ใหม่!):** สั่งให้เกมรันเฉพาะ "Physical Cores" (Thread แรก) ได้เพียงแค่คลิกเดียว ช่วยลด Latency (อาการหน่วง) และความร้อนได้อย่างเห็นผล
+- **🚀 โหมดจัดลำดับความสำคัญ:** 
+    - **P-CORE Mode:** บังคับเกมรันบนคอร์ที่แรงที่สุดเท่านั้น
+    - **E-CORE Mode:** ย้าย Discord, OBS, หรือ Browser ไปไว้ที่คอร์ประหยัดพลังงาน
+- **📂 จัดการยกโฟลเดอร์:** ไม่ต้องแอดทีละเกม! แค่เลือกโฟลเดอร์ Steam หรือ Epic ของคุณ ระบบจะจัดการทุกเกมที่เปิดจากในนั้นทันที
+- **🧹 คลีนเนอร์ในตัว:** ลบไฟล์ขยะและ Shader Cache ที่ค้างอยู่ในระบบ เพื่อให้เครื่องลื่นไหลที่สุด
+
+### 🇺🇸 [EN] English
+- **🎯 Robust Hybrid Detection (New):** No more guessing. We use direct Windows API calls to identify `EfficiencyClass`, ensuring perfect P/E core mapping regardless of BIOS settings.
+- **⚡ Manual SMT Control (New):** Force games to use only Physical Cores with a single toggle. Reduces context-switching latency and improves 1% low FPS.
+- **🚀 Advanced Affinity Modes:**
+    - **P-CORE Mode:** Locks critical apps to high-performance execution units.
+    - **E-CORE Mode:** Offloads background apps (OBS, Browsers) to efficiency cores.
+- **📂 Path-Based Optimization:** Add your entire game library (Steam/Epic/etc.) and let the software handle every game automatically.
+- **🧹 Integrated System Cleaner:** Free up space and reduce system overhead by cleaning temporary junk and cache files.
+
+---
+
+## 🔍 ทำไมต้องใช้ CorePriority Pro? (Technical Deep Dive)
+
+### 🇹🇭 [TH] ภาษาไทย
+ปัญหาใหญ่ของ Windows คือบางครั้งมันเอา "เกม" ไปรันบน E-Core หรือสลับคอร์ไปมา ทำให้เกิดอาการ **Micro-stutter (กระตุกกึกๆ)** CorePriority Pro จะเข้ามา "ล็อค" ให้เกมอยู่กับที่บนคอร์ที่แรงที่สุด และด้วยระบบ **SMT Filtering** ในเวอร์ชัน 2.2.3 จะช่วยให้เข้าถึงพลังของ Physical Core ได้โดยตรง ไม่ต้องผ่าน Hyper-Threading ที่อาจทำให้เกิดความร้อนและ Latency สะสม
+
+### 🇺🇸 [EN] English
+Windows Scheduler doesn't always get it right. By forcing core affinity, CorePriority Pro eliminates the overhead of thread migration. Version 2.2.3 introduces hardware-level masking, allowing apps to bypass logical threads (Hyper-Threading) and utilize the raw power of physical cores, resulting in smoother frame times and better thermal efficiency.
+
+---
+
+## 🛠 วิธีใช้งาน (How to Use)
+
+1. **Run as Admin:** ต้องรันโปรแกรมด้วยสิทธิ์ผู้ดูแลระบบเสมอ
+2. **Add Targets:** เพิ่มไฟล์ .exe ของเกม หรือเลือกโฟลเดอร์เกมของคุณในหน้า Settings
+3. **Choose Mode:** เลือกโหมด P-CORE สำหรับเกม และ E-CORE สำหรับแอปเบื้องหลัง
+4. **Start:** กดปุ่ม **START OPTIMIZER** ในหน้า Dashboard แล้วไปลุยในเกมได้เลย!
+
+---
+
+## 📦 การติดตั้ง (Installation)
+```bash
+git clone https://github.com/TDitbam/CoreOptimizer.git
+cd CoreOptimizer
+pip install -r requirements.txt
+python main.py
 ```
 
-## 🚀 Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/TDitbam/CoreOptimizer.git
-   cd CoreOptimizer
-   ```
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## 🎮 Usage
-
-### Launching the Application
-The application **requires Administrative Privileges** to manage other processes.
-
-- **GUI Mode (Default)**:
-  ```bash
-  python main.py
-  ```
-- **CLI Mode**:
-  ```bash
-  python main.py --cli
-  ```
-
-### How to Optimize
-1. **Settings Tab**: Add your game executables or entire game directories.
-2. **Select Mode**: Choose between P-CORE or E-CORE for each entry.
-3. **Dashboard**: Click **START OPTIMIZER** to begin monitoring.
-4. **Cleanup**: Use the **Cleanup Junk** tab to free up system space.
-
-## 🔍 How it Works
-
-### P-Core vs E-Core Separation
-Windows doesn't always place game threads on P-Cores, leading to micro-stutter. P-Core Optimizer Pro forces the OS to use only the fastest cores for your games, reducing latency and improving 1% lows.
-
-### Path-Based Matching
-Instead of adding every game manually, you can add your entire `D:\Games` library. The optimizer will monitor every process launched and, if its path starts with your library folder, it will apply your chosen performance profile.
-
-## 📜 License
-MIT License - see [LICENSE](LICENSE) for details.
+---
+*Developed with ❤️ for the Gaming Community.*
+*เวอร์ชัน 2.2.3 - แม่นยำกว่า แรงกว่า เสถียรกว่า*
