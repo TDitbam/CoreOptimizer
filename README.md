@@ -56,6 +56,11 @@ CorePriority Pro แก้ปัญหานี้โดย:
 - 1% low FPS ดีขึ้น
 
 ---
+<img width="952" height="732" alt="Screenshot 2026-06-01 231545" src="https://github.com/user-attachments/assets/7ff2f2d1-adb8-4cfb-ab91-5aea08fedb4c" />
+<img width="952" height="732" alt="Screenshot 2026-06-01 231557" src="https://github.com/user-attachments/assets/b56ddf72-2305-4425-b2cb-77574a30539a" />
+<img width="952" height="732" alt="Screenshot 2026-06-01 231704" src="https://github.com/user-attachments/assets/d148402b-4239-49c3-a198-b541c3ca7c1d" />
+
+---
 
 ## 🛠 How to Use
 
