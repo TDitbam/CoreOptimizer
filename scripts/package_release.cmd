@@ -1,6 +1,6 @@
 @echo off
 pushd "%~dp0.."
-set VERSION=v2.2.3
+set VERSION=v2.2.4
 set RELEASE_DIR=releases\Release_%VERSION%
 
 echo [*] Starting Build and Packaging Process for %VERSION%...

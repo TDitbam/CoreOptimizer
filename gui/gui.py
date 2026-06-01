@@ -176,15 +176,20 @@ class App(ctk.CTk):
         try:
             exclude_val = self.config["Settings"].getboolean("exclude_core_0", fallback=True)
             disable_smt_val = self.config["Settings"].getboolean("disable_smt", fallback=False)
+            auto_cleanup_val = self.config["Settings"].getboolean("auto_cleanup", fallback=False)
         except (ValueError, TypeError):
             exclude_val = True
             disable_smt_val = False
+            auto_cleanup_val = False
             
         self.exclude_core0_var = ctk.BooleanVar(value=exclude_val)
-        ctk.CTkSwitch(self.general_frame, text="Exclude Core 0", variable=self.exclude_core0_var, command=self.save_settings_realtime).pack(side="left", padx=20)
+        ctk.CTkSwitch(self.general_frame, text="Exclude Core 0", variable=self.exclude_core0_var, command=self.save_settings_realtime).pack(side="left", padx=10)
 
         self.disable_smt_var = ctk.BooleanVar(value=disable_smt_val)
-        ctk.CTkSwitch(self.general_frame, text="Disable SMT (Phys Only)", variable=self.disable_smt_var, command=self.save_settings_realtime).pack(side="left", padx=20)
+        ctk.CTkSwitch(self.general_frame, text="Disable SMT (Phys Only)", variable=self.disable_smt_var, command=self.save_settings_realtime).pack(side="left", padx=10)
+
+        self.auto_cleanup_var = ctk.BooleanVar(value=auto_cleanup_val)
+        ctk.CTkSwitch(self.general_frame, text="Auto Junk Cleanup", variable=self.auto_cleanup_var, command=self.save_settings_realtime).pack(side="left", padx=10)
         
         self.lists_frame = ctk.CTkTabview(self.settings_frame, height=450)
         self.lists_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=10)
@@ -314,6 +319,7 @@ class App(ctk.CTk):
                 self.config["Settings"]["interval"] = val
             self.config["Settings"]["exclude_core_0"] = str(self.exclude_core0_var.get()).lower()
             self.config["Settings"]["disable_smt"] = str(self.disable_smt_var.get()).lower()
+            self.config["Settings"]["auto_cleanup"] = str(self.auto_cleanup_var.get()).lower()
             save_config(self.config)
             self.setup_dashboard()
             self.log("⚡ Config saved.")

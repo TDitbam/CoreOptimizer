@@ -2,8 +2,9 @@ import time
 import psutil
 import os
 import sys
-from core.config_loader import load_config, get_targets, get_paths
+from core.config_loader import load_config, get_targets, get_paths, save_config
 from core.cpu_topology import split_p_e_cores, calculate_affinity_mask
+from core.cleaner import clean_junk
 
 # Platform detection for priority/affinity logic
 IS_WINDOWS = os.name == 'nt'
@@ -67,12 +68,30 @@ def optimize_processes(stop_event, default_interval):
         try:
             exclude_core_0 = config["Settings"].getboolean("exclude_core_0", fallback=True)
             disable_smt = config["Settings"].getboolean("disable_smt", fallback=False)
+            auto_cleanup = config["Settings"].getboolean("auto_cleanup", fallback=False)
+            last_cleanup = float(config["Settings"].get("last_cleanup", 0))
             interval = float(config["Settings"].get("interval", default_interval))
         except (ValueError, TypeError, KeyError):
             exclude_core_0 = True
             disable_smt = False
+            auto_cleanup = False
+            last_cleanup = 0
             interval = default_interval
             
+        # Auto Cleanup Logic (Runs every 24 hours if enabled)
+        current_time = time.time()
+        if auto_cleanup and (current_time - last_cleanup > 86400):
+            if is_cli:
+                print("[*] Running Auto Junk Cleanup...")
+            # Run in a separate thread if possible, but in CLI/Main loop simple is fine
+            files, bytes_saved = clean_junk()
+            if is_cli:
+                print(f"[OK] Auto Cleanup finished: {files} files deleted, {bytes_saved // 1024} KB saved.")
+            
+            # Update last cleanup time
+            config["Settings"]["last_cleanup"] = str(current_time)
+            save_config(config)
+
         p_cores, e_cores = get_optimal_cores(exclude_core_0, disable_smt)
         
         if not p_cores:
