@@ -1,5 +1,5 @@
 import psutil
-from core.cpu_topology import split_p_e_cores
+from core.cpu_topology import split_p_e_cores, calculate_affinity_mask, get_cpu_topology
 import unittest.mock as mock
 
 def test_split_p_e_cores_basic():
@@ -7,38 +7,57 @@ def test_split_p_e_cores_basic():
     assert isinstance(p_cores, list)
     assert isinstance(e_cores, list)
 
-def test_split_p_e_cores_exclusion():
-    # Test with Core 0 exclusion
-    p_with, e_with = split_p_e_cores(exclude_core_0=True)
-    p_without, e_without = split_p_e_cores(exclude_core_0=False)
+def test_calculate_affinity_mask():
+    assert calculate_affinity_mask([0]) == 1
+    assert calculate_affinity_mask([0, 2]) == 5
+    assert calculate_affinity_mask([0, 1, 2, 3]) == 15
+    assert calculate_affinity_mask([]) == 0
+
+def test_hybrid_topology_mock():
+    # Simulate 8P + 8E (24 logical, 16 physical)
+    # smt_pairs = 24 - 16 = 8. 
+    # Physical 0-7: [0,1], [2,3], ..., [14,15] (P-cores)
+    # Physical 8-15: [16], [17], ..., [23] (E-cores)
     
-    # If there are P-cores, Core 0 should be missing in the 'True' case
-    if p_with and p_without:
-        assert 0 not in p_with
-        assert 0 in p_without
-        assert len(p_without) == len(p_with) + 1
+    def mock_cpu_count(logical=True):
+        return 24 if logical else 16
 
-def test_mocked_topology():
-    # Mock psutil.cpu_count to simulate a 16-thread hybrid CPU
-    with mock.patch('psutil.cpu_count', return_value=16):
-        # 16 * 0.6 = 9.6 -> round to 10. 10 is even.
-        # exclude_core_0=False -> P: 0-9 (10 cores), E: 10-15 (6 cores)
+    with mock.patch('psutil.cpu_count', side_effect=mock_cpu_count):
         p, e = split_p_e_cores(exclude_core_0=False)
-        assert p == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        assert e == [10, 11, 12, 13, 14, 15]
+        assert p == list(range(16))
+        assert e == list(range(16, 24))
         
-        # exclude_core_0=True -> P: 1-9 (9 cores), E: 10-15 (6 cores)
         p, e = split_p_e_cores(exclude_core_0=True)
-        assert p == [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        assert e == [10, 11, 12, 13, 14, 15]
+        # Excludes logical 0 and 1
+        assert p == list(range(2, 16))
+        assert e == list(range(16, 24))
 
-def test_low_core_count():
-    with mock.patch('psutil.cpu_count', return_value=4):
-        # logical <= 8 logic: p = range(start, logical), e = []
+def test_full_smt_topology_mock():
+    # Simulate 8 physical cores, all with SMT (16 logical, 8 physical)
+    def mock_cpu_count(logical=True):
+        return 16 if logical else 8
+
+    with mock.patch('psutil.cpu_count', side_effect=mock_cpu_count):
         p, e = split_p_e_cores(exclude_core_0=False)
-        assert p == [0, 1, 2, 3]
+        assert p == list(range(16))
         assert e == []
         
         p, e = split_p_e_cores(exclude_core_0=True)
-        assert p == [1, 2, 3]
+        # Excludes logical 0 and 1
+        assert p == list(range(2, 16))
+        assert e == []
+
+def test_no_smt_topology_mock():
+    # Simulate 4 physical cores, no SMT (4 logical, 4 physical)
+    def mock_cpu_count(logical=True):
+        return 4 if logical else 4
+
+    with mock.patch('psutil.cpu_count', side_effect=mock_cpu_count):
+        p, e = split_p_e_cores(exclude_core_0=False)
+        assert p == list(range(4))
+        assert e == []
+        
+        p, e = split_p_e_cores(exclude_core_0=True)
+        # Excludes logical 0 only as it's its own physical core
+        assert p == list(range(1, 4))
         assert e == []

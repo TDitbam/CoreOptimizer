@@ -3,7 +3,7 @@ import psutil
 import os
 import sys
 from core.config_loader import load_config, get_targets, get_paths
-from core.cpu_topology import split_p_e_cores
+from core.cpu_topology import split_p_e_cores, calculate_affinity_mask
 
 # Platform detection for priority/affinity logic
 IS_WINDOWS = os.name == 'nt'
@@ -150,7 +150,8 @@ def optimize_processes(stop_event, default_interval):
                             changed = True
                             
                         if changed:
-                            print(f"[OPT] PID: {pid} | Process: {raw_name} | Mode: {priority} | Cores: {len(cores_to_use)}")
+                            mask = calculate_affinity_mask(cores_to_use)
+                            print(f"[OPT] PID: {pid} | Process: {raw_name} | Mode: {priority} | Cores: {len(cores_to_use)} | Mask: {hex(mask)}")
                     except (psutil.AccessDenied, psutil.ZombieProcess, psutil.NoSuchProcess):
                         continue
                         
