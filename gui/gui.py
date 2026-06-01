@@ -4,6 +4,8 @@ import threading
 import sys
 import os
 from PIL import Image
+import pystray
+from pystray import MenuItem as item
 from core.config_loader import load_config, save_config, get_targets, get_paths
 from core.cpu_topology import split_p_e_cores
 from core.cleaner import clean_junk
@@ -15,12 +17,16 @@ ctk.set_default_color_theme("blue")
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("CorePriority Pro v3.0 | Engine Ready")
+        self.title("CorePriority Pro v3.1.0")
         self.geometry("1000x750")
 
         self.running = False
         self.config = load_config()
         self.stop_event = threading.Event()
+
+        # System Tray Setup
+        self.protocol('WM_DELETE_WINDOW', self.withdraw_to_tray)
+        self.create_tray_icon()
 
         # Layout Setup
         self.grid_columnconfigure(1, weight=1)
@@ -214,3 +220,29 @@ class App(ctk.CTk):
         f = filedialog.askdirectory()
         if f: self.config["Paths"][f] = "P-CORE"; self.refresh_lists(); self.save_settings()
     def rem_path(self, p): self.config.remove_option("Paths", p); self.refresh_lists(); self.save_settings()
+
+    # --- System Tray Methods ---
+    def create_tray_icon(self):
+        icon_path = 'gui/icon.ico'
+        if os.path.exists(icon_path):
+            image = Image.open(icon_path)
+        else:
+            image = Image.new('RGB', (64, 64), color=(40, 167, 69))
+            
+        menu = (item('Open CorePriority', self.show_from_tray, default=True),
+                item('Exit', self.exit_app))
+        self.tray_icon = pystray.Icon("CorePriorityPro", image, "CorePriority Pro", menu)
+        threading.Thread(target=self.tray_icon.run, daemon=True).start()
+
+    def withdraw_to_tray(self):
+        self.withdraw()
+
+    def show_from_tray(self, icon=None, item=None):
+        self.after(0, self.deiconify)
+        self.after(0, self.focus_force)
+
+    def exit_app(self, icon=None, item=None):
+        self.stop_service()
+        self.tray_icon.stop()
+        self.quit()
+        sys.exit(0)
